@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Progress & Task Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            900: '#0B132B',
+                            800: '#1C2541',
+                            700: '#2C3E55',
+                            600: '#3A506B'
+                        },
+                        cyan: {
+                            accent: '#00F5D4',
+                            bright: '#00BBF9'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0B132B;
+            color: #F8FAFC;
+        }
+        /* Custom Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(28, 37, 65, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(44, 62, 85, 0.45);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 245, 212, 0.15);
+        }
+        .glass-card:hover {
+            border-color: rgba(0, 245, 212, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(0, 245, 212, 0.1);
+        }
+        .glass-nav {
+            background: rgba(11, 19, 43, 0.85);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #00F5D4 0%, #00BBF9 100%);
+                background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #00F5D4 0%, #00BBF9 100%);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B132B;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2C3E55;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00F5D4;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased text-slate-100 overflow-x-hidden selection:bg-cyan-accent selection:text-navy-900">
+
+    <!-- AUTHENTICATION OVERLAY MODAL -->
+    <div id="auth-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900/90 backdrop-blur-md hidden">
+        <div class="glass-panel w-full max-w-md p-8 rounded-2xl shadow-2xl border border-cyan-accent/20 relative overflow-hidden">
+            <div class="absolute -top-20 -right-20 w-40 h-40 bg-cyan-accent/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl gradient-bg text-navy-900 mb-3 shadow-lg shadow-cyan-accent/20">
+                    <i data-lucide="graduation-cap" class="w-8 h-8"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white tracking-wide">TaskWise</h2>
+                <p class="text-xs text-slate-400 mt-1"> Student Progress & Task Management System</p>
+            </div>
+
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Full Student Name</label>
+                    <input type="text" id="auth-name" required placeholder="Juan Dela Cruz" class="w-full px-4 py-2.5 rounded-xl bg-navy-900/80 border border-slate-700 text-white focus:outline-none focus:border-cyan-accent text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Grade Level</label>
+                        <select id="auth-grade" class="w-full px-3 py-2.5 rounded-xl bg-navy-900/80 border border-slate-700 text-white focus:outline-none focus:border-cyan-accent text-sm">
+                            <option value="Grade 12">Grade 12</option>
+                            <option value="Grade 11">Grade 11</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Strand / Track</label>
+                        <select id="auth-strand" class="w-full px-3 py-2.5 rounded-xl bg-navy-900/80 border border-slate-700 text-white focus:outline-none focus:border-cyan-accent text-sm">
+                            <option value="TVL - ICT">TVL - ICT</option>
+                            <option value="STEM">STEM</option>
+                            <option value="ABM">ABM</option>
+                            <option value="HUMSS">HUMSS</option>
+                            <option value="GAS">GAS</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">LRN / Student ID</label>
+                    <input type="text" id="auth-studentid" required placeholder="2026-10492-SJ" class="w-full px-4 py-2.5 rounded-xl bg-navy-900/80 border border-slate-700 text-white focus:outline-none focus:border-cyan-accent text-sm">
+                </div>
+                <button type="submit" class="w-full py-3 rounded-xl gradient-bg text-navy-900 font-bold text-sm tracking-wide shadow-lg shadow-cyan-accent/20 hover:opacity-95 transition">
+                    Access Portal & Dynamic Dashboard
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div class="flex h-screen overflow-hidden">
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="w-64 glass-nav hidden md:flex flex-col justify-between shrink-0 z-20">
+            <div>
+                <!-- App Logo & Title -->
+                <div class="p-5 border-b border-white/5 flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center text-navy-900 shadow-md">
+                        <i data-lucide="layers" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-base tracking-wide gradient-text">TaskWise</h1>
+                        <p class="text-[10px] text-cyan-bright font-medium">Track Progress</Track></p>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="p-3 space-y-1 text-sm font-medium">
+                    <button onclick="switchTab('home')" id="nav-home" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition text-slate-300 hover:bg-navy-700/50">
+                        <i data-lucide="home" class="w-5 h-5 text-cyan-accent"></i>
+                        <span>Home</span>
+                    </button>
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition text-slate-300 hover:bg-navy-700/50">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5 text-cyan-accent"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button onclick="switchTab('calendars')" id="nav-calendars" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition text-slate-300 hover:bg-navy-700/50">
+                        <i data-lucide="calendar" class="w-5 h-5 text-cyan-accent"></i>
+                        <span>Calendars</span>
+                    </button>
+                    <button onclick="switchTab('activities')" id="nav-activities" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition text-slate-300 hover:bg-navy-700/50">
+                        <i data-lucide="target" class="w-5 h-5 text-cyan-accent"></i>
+                        <span>My Activities</span>
+                    </button>
+                    <button onclick="switchTab('classes')" id="nav-classes" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition text-slate-300 hover:bg-navy-700/50">
+                        <i data-lucide="book-open" class="w-5 h-5 text-cyan-accent"></i>
+                        <span>Classes & Tasks</span>
+                    </button>
+                    <button onclick="switchTab('topay')" id="nav-topay" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition text-slate-300 hover:bg-navy-700/50">
+                        <i data-lucide="wallet" class="w-5 h-5 text-cyan-accent"></i>
+                        <span>To-pay Fees</span>
+                    </button>
+                    <button onclick="switchTab('completed')" id="nav-completed" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition text-slate-300 hover:bg-navy-700/50">
+                        <i data-lucide="award" class="w-5 h-5 text-cyan-accent"></i>
+                        <span>Mga Natapos</span>
+                    </button>
+                    <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition text-slate-300 hover:bg-navy-700/50">
+                        <i data-lucide="user-cog" class="w-5 h-5 text-cyan-accent"></i>
+                        <span>Profile / Settings</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Mini Profile Footer -->
+            <div class="p-4 border-t border-white/5">
+                <div class="flex items-center justify-between glass-card p-2.5 rounded-xl">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div class="w-9 h-9 rounded-lg bg-navy-600 border border-cyan-accent/30 flex items-center justify-center font-bold text-cyan-accent text-sm shrink-0" id="user-avatar-initials">
+                            JD
+                        </div>
+                        <div class="truncate">
+                            <p class="text-xs font-semibold text-white truncate" id="sidebar-user-name">Juan Dela Cruz</p>
+                            <p class="text-[10px] text-slate-400 truncate" id="sidebar-user-strand">Grade 12 • TVL-ICT</p>
+                        </div>
+                    </div>
+                    <button onclick="openAuthModal()" title="Switch User / Logout" class="p-1.5 text-slate-400 hover:text-cyan-accent hover:bg-navy-700 rounded-lg transition">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- HEADER BAR -->
+            <header class="glass-panel h-16 px-6 flex items-center justify-between border-b border-white/5 z-10 shrink-0">
+                <div class="flex items-center space-x-4">
+                    <button onclick="toggleMobileNav()" class="md:hidden text-slate-300 hover:text-cyan-accent">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <div>
+                        <h2 id="page-title" class="text-base font-bold text-white tracking-wide">Home</h2>
+                        <p class="text-[11px] text-slate-400 hidden sm:block">A Website that can help you track your academic progress</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="text-right hidden sm:block">
+                        <p id="live-time" class="text-xs font-mono font-bold text-cyan-accent">00:00:00 PM</p>
+                        <p id="live-date" class="text-[10px] text-slate-400">Monday, October 26, 2026</p>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-accent/10 text-cyan-accent border border-cyan-accent/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-accent animate-pulse mr-1.5"></span>
+                        Active Term
+                    </span>
+                </div>
+            </header>
+
+            <!-- MOBILE NAV DRAWER -->
+            <div id="mobile-nav" class="fixed inset-0 bg-navy-900/90 backdrop-blur-lg z-40 hidden flex-col p-6 space-y-4 md:hidden">
+                <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                    <h3 class="font-bold text-lg text-white gradient-text">SHS Navigation</h3>
+                    <button onclick="toggleMobileNav()" class="text-slate-400 hover:text-white">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="space-y-2 overflow-y-auto">
+                    <button onclick="switchTab('home'); toggleMobileNav();" class="w-full text-left px-4 py-3 rounded-xl bg-navy-800 text-slate-200">Home</button>
+                    <button onclick="switchTab('dashboard'); toggleMobileNav();" class="w-full text-left px-4 py-3 rounded-xl bg-navy-800 text-slate-200">Dashboard</button>
+                    <button onclick="switchTab('calendars'); toggleMobileNav();" class="w-full text-left px-4 py-3 rounded-xl bg-navy-800 text-slate-200">Calendars</button>
+                    <button onclick="switchTab('activities'); toggleMobileNav();" class="w-full text-left px-4 py-3 rounded-xl bg-navy-800 text-slate-200">My Activities</button>
+                    <button onclick="switchTab('classes'); toggleMobileNav();" class="w-full text-left px-4 py-3 rounded-xl bg-navy-800 text-slate-200">Classes & Tasks</button>
+                    <button onclick="switchTab('topay'); toggleMobileNav();" class="w-full text-left px-4 py-3 rounded-xl bg-navy-800 text-slate-200">To-pay Fees</button>
+                    <button onclick="switchTab('completed'); toggleMobileNav();" class="w-full text-left px-4 py-3 rounded-xl bg-navy-800 text-slate-200">Done Activities</button>
+                    <button onclick="switchTab('settings'); toggleMobileNav();" class="w-full text-left px-4 py-3 rounded-xl bg-navy-800 text-slate-200">Profile / Settings</button>
+                </div>
+            </div>
+
+            <!-- TAB CONTENT CONTAINER -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+
+                <!-- 1. HOME TAB -->
+                <section id="tab-home" class="tab-content space-y-6">
+                    <!-- Website Link -->
+<div class="glass-card p-4 rounded-xl">
+    <a href="https://www.TaskWise.com"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="text-cyan-accent hover:underline font-semibold">
+        Visit TaskWise →
+    </a>
+</div>
+                    <!-- Welcome Banner -->
+                    <div class="relative glass-panel rounded-2xl p-6 md:p-8 overflow-hidden border border-cyan-accent/20">
+                        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-cyan-accent/10 rounded-full blur-3xl pointer-events-none"></div>
+                        <div class="relative z-10 max-w-3xl space-y-2">
+                            <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-cyan-accent/20 text-cyan-accent">
+                                Track Your Progress!
+                            </span>
+                            <h2 class="text-2xl md:text-3xl font-extrabold text-white">
+                                Welcome back, <span id="banner-user-name" class="gradient-text">Juan</span>! 👋
+                            </h2>
+                            <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <span class="font-semibold text-white"></span>“Strive for excellence, not perfection.” — H. Jackson Brown Jr.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Summary Metric Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
+                            <div class="p-3.5 rounded-xl bg-cyan-accent/10 text-cyan-accent border border-cyan-accent/20">
+                                <i data-lucide="check-square" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium">Total SHS Tasks</p>
+                                <h3 id="summary-total-tasks" class="text-2xl font-bold text-white">12</h3>
+                            </div>
+                        </div>
+
+                        <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
+                            <div class="p-3.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                <i data-lucide="credit-card" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium">Pending Balance</p>
+                                <h3 id="summary-pending-fees" class="text-2xl font-bold text-white">₱650.00</h3>
+                            </div>
+                        </div>
+
+                        <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
+                            <div class="p-3.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                <i data-lucide="flag" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium">Active Milestones</p>
+                                <h3 id="summary-active-goals" class="text-2xl font-bold text-white">4</h3>
+                            </div>
+                        </div>
+
+                        <div class="glass-card p-5 rounded-2xl flex items-center space-x-4">
+                            <div class="p-3.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                <i data-lucide="trending-up" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium">Overall Progress</p>
+                                <h3 id="summary-completion-rate" class="text-2xl font-bold text-white">75%</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Layout Grid for Home Details -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Upcoming Deadlines Preview -->
+                        <div class="lg:col-span-2 glass-panel p-6 rounded-2xl space-y-4">
+                            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                                    <i data-lucide="clock" class="w-5 h-5 text-cyan-accent"></i>
+                                    Upcoming SHS Deadlines
+                                </h3>
+                                <button onclick="switchTab('classes')" class="text-xs text-cyan-accent hover:underline">View All Tasks</button>
+                            </div>
+                            <div id="home-upcoming-list" class="space-y-3">
+                                <!-- Dynamic rendering via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Quick Overview Actions -->
+                        <div class="glass-panel p-6 rounded-2xl space-y-4">
+                            <h3 class="font-bold text-base text-white flex items-center gap-2 border-b border-white/5 pb-3">
+                                <i data-lucide="zap" class="w-5 h-5 text-cyan-accent"></i>
+                                Quick Overview Cards
+                            </h3>
+                            <div class="space-y-3">
+                                <div onclick="switchTab('classes')" class="glass-card p-4 rounded-xl cursor-pointer flex items-center justify-between group">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="p-2 bg-navy-900 rounded-lg text-cyan-accent">
+                                            <i data-lucide="plus" class="w-5 h-5"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold text-white">Add Subject Task</p>
+                                            <p class="text-[10px] text-slate-400">Research papers, outputs & quizzes</p>
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-cyan-accent transition"></i>
+                                </div>
+
+                                <div onclick="switchTab('topay')" class="glass-card p-4 rounded-xl cursor-pointer flex items-center justify-between group">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="p-2 bg-navy-900 rounded-lg text-amber-400">
+                                            <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold text-white">Check Class Dues</p>
+                                            <p class="text-[10px] text-slate-400">Capstone printouts & shirt shares</p>
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition"></i>
+                                </div>
+
+                                <div onclick="switchTab('activities')" class="glass-card p-4 rounded-xl cursor-pointer flex items-center justify-between group">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="p-2 bg-navy-900 rounded-lg text-emerald-400">
+                                            <i data-lucide="award" class="w-5 h-5"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold text-white">Track Milestones</p>
+                                            <p class="text-[10px] text-slate-400">Defense prep & NCII certs</p>
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. DASHBOARD TAB -->
+                <section id="tab-dashboard" class="tab-content space-y-6 hidden">
+                    <!-- Chart Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between">
+                            <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                                <i data-lucide="pie-chart" class="w-4 h-4 text-cyan-accent"></i>
+                                Task Status Breakdown
+                            </h3>
+                            <div class="relative h-60 flex items-center justify-center">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between">
+                            <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                                <i data-lucide="bar-chart-2" class="w-4 h-4 text-cyan-accent"></i>
+                                Subject Academic Load Distribution
+                            </h3>
+                            <div class="relative h-60 flex items-center justify-center">
+                                <canvas id="subjectChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Master Task Table -->
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                            <div>
+                                <h3 class="font-bold text-base text-white">Master Task Registry</h3>
+                                <p class="text-xs text-slate-400">Centralized view of all academic requirements</p>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <input type="text" id="task-search-input" onkeyup="filterMasterTable()" placeholder="Search task or subject..." class="px-3 py-1.5 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-accent">
+                                <select id="task-filter-status" onchange="filterMasterTable()" class="px-3 py-1.5 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-accent">
+                                    <option value="All">All Statuses</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Pending">Pending</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                                        <th class="py-3 px-4">Task Name</th>
+                                        <th class="py-3 px-4">Subject</th>
+                                        <th class="py-3 px-4">Due Date</th>
+                                        <th class="py-3 px-4">Status</th>
+                                        <th class="py-3 px-4 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="master-task-tbody" class="text-xs divide-y divide-slate-800/50">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. CALENDARS TAB -->
+                <section id="tab-calendars" class="tab-content space-y-6 hidden">
+                    <div class="glass-panel p-6 rounded-2xl space-y-6">
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="calendar" class="w-5 h-5 text-cyan-accent"></i>
+                                    Academic Due Date Calendar
+                                </h3>
+                                <p class="text-xs text-slate-400">Schedule view for submissions and milestone deadlines</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="changeCalendarMonth(-1)" class="p-2 rounded-lg bg-navy-900 text-slate-300 hover:text-cyan-accent">
+                                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                </button>
+                                <span id="calendar-month-year" class="text-sm font-bold text-white px-3">October 2026</span>
+                                <button onclick="changeCalendarMonth(1)" class="p-2 rounded-lg bg-navy-900 text-slate-300 hover:text-cyan-accent">
+                                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Calendar Grid Header -->
+                        <div class="grid grid-cols-7 gap-2 text-center text-xs font-bold text-cyan-accent border-b border-white/5 pb-2">
+                            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                        </div>
+
+                        <!-- Calendar Days Grid -->
+                        <div id="calendar-days-grid" class="grid grid-cols-7 gap-2">
+                            <!-- Dynamically generated calendar cells -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. MY ACTIVITIES TAB -->
+                <section id="tab-activities" class="tab-content space-y-6 hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">SHS Milestones & Goal Tracker</h3>
+                            <p class="text-xs text-slate-400">Personal academic achievements, defense milestones, and certification progress</p>
+                        </div>
+                        <button onclick="openGoalModal()" class="px-4 py-2 rounded-xl gradient-bg text-navy-900 font-bold text-xs flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Add Milestone
+                        </button>
+                    </div>
+
+                    <div id="goals-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Dynamic Goals Cards -->
+                    </div>
+                </section>
+
+                <!-- 5. CLASSES TAB -->
+                <section id="tab-classes" class="tab-content space-y-6 hidden">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Subject-Wise Task Checklists</h3>
+                            <p class="text-xs text-slate-400">Manage daily outputs, quizzes, and projects categorized by SHS subjects</p>
+                        </div>
+                        <button onclick="openAddTaskModal()" class="px-4 py-2 rounded-xl gradient-bg text-navy-900 font-bold text-xs flex items-center gap-2 self-start sm:self-auto">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Create Subject Task
+                        </button>
+                    </div>
+
+                    <!-- Subject Category Tabs -->
+                    <div id="subject-filter-pills" class="flex items-center gap-2 overflow-x-auto pb-2 text-xs">
+                        <!-- Dynamic Pills -->
+                    </div>
+
+                    <!-- Subject Task List -->
+                    <div id="subject-task-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Dynamic subject task cards -->
+                    </div>
+                </section>
+
+                <!-- 6. TO-PAY TAB -->
+                <section id="tab-topay" class="tab-content space-y-6 hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Overview Financial Chart -->
+                        <div class="lg:col-span-1 glass-panel p-6 rounded-2xl flex flex-col justify-between space-y-4">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i data-lucide="pie-chart" class="w-4 h-4 text-cyan-accent"></i>
+                                Fee Category Ratio
+                            </h3>
+                            <div class="relative h-52 flex items-center justify-center">
+                                <canvas id="feeChart"></canvas>
+                            </div>
+                            <div class="p-3 rounded-xl bg-navy-900/80 border border-slate-700/50 space-y-1">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-400">Total Contribution Target:</span>
+                                    <span id="fee-total-target" class="font-bold text-white">₱0.00</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-400">Settled Amount:</span>
+                                    <span id="fee-total-settled" class="font-bold text-emerald-400">₱0.00</span>
+                                </div>
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-400">Remaining Balance:</span>
+                                    <span id="fee-total-remaining" class="font-bold text-amber-400">₱0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fee Checklist List -->
+                        <div class="lg:col-span-2 glass-panel p-6 rounded-2xl space-y-4">
+                            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                                <div>
+                                    <h3 class="text-base font-bold text-white">School Contributions & Project Shares</h3>
+                                    <p class="text-xs text-slate-400">Capstone printing, lab dues, shirt fees, and yearbook payments</p>
+                                </div>
+                                <button onclick="openFeeModal()" class="px-3 py-1.5 rounded-xl bg-cyan-accent/20 text-cyan-accent border border-cyan-accent/30 hover:bg-cyan-accent/30 text-xs font-semibold flex items-center gap-1">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Fee
+                                </button>
+                            </div>
+
+                            <div id="fee-items-container" class="space-y-4">
+                                <!-- Dynamic Fee List with progress bars -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. MGA NATAPOS TAB -->
+                <section id="tab-completed" class="tab-content space-y-6 hidden">
+                    <div class="glass-panel p-6 rounded-2xl space-y-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i data-lucide="award" class="w-5 h-5 text-cyan-accent"></i>
+                                Mga Natapos na Bayarin at Activities
+                            </h3>
+                            <p class="text-xs text-slate-400">Hall of completed deliverables, settled financial contributions, and earned badges</p>
+                        </div>
+
+                        <!-- Earned Badges Showcase -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div class="glass-card p-4 rounded-xl text-center space-y-2 border border-cyan-accent/20">
+                                <div class="w-12 h-12 mx-auto rounded-full bg-cyan-accent/20 border border-cyan-accent text-cyan-accent flex items-center justify-center">
+                                    <i data-lucide="book-check" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="text-xs font-bold text-white">Research Master</h4>
+                                <p class="text-[10px] text-slate-400">Chapter 1-3 Defense Complete</p>
+                            </div>
+
+                            <div class="glass-card p-4 rounded-xl text-center space-y-2 border border-emerald-500/20">
+                                <div class="w-12 h-12 mx-auto rounded-full bg-emerald-500/20 border border-emerald-500 text-emerald-400 flex items-center justify-center">
+                                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="text-xs font-bold text-white">Debt-Free Scholar</h4>
+                                <p class="text-[10px] text-slate-400">Settled All Project Fees</p>
+                            </div>
+
+                            <div class="glass-card p-4 rounded-xl text-center space-y-2 border border-amber-500/20">
+                                <div class="w-12 h-12 mx-auto rounded-full bg-amber-500/20 border border-amber-500 text-amber-400 flex items-center justify-center">
+                                    <i data-lucide="zap" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="text-xs font-bold text-white">Task Crusher</h4>
+                                <p class="text-[10px] text-slate-400">Completed 10+ Tasks On Time</p>
+                            </div>
+
+                            <div class="glass-card p-4 rounded-xl text-center space-y-2 border border-purple-500/20">
+                                <div class="w-12 h-12 mx-auto rounded-full bg-purple-500/20 border border-purple-500 text-purple-400 flex items-center justify-center">
+                                    <i data-lucide="star" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="text-xs font-bold text-white">SHS Model Student</h4>
+                                <p class="text-[10px] text-slate-400">High Milestone Score</p>
+                            </div>
+                        </div>
+
+                        <!-- Completed Lists Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                            <div>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-cyan-accent mb-3 flex items-center gap-2">
+                                    <i data-lucide="check-circle" class="w-4 h-4"></i> Finished Academic Tasks
+                                </h4>
+                                <ul id="completed-tasks-list" class="space-y-2 text-xs">
+                                    <!-- Dynamic completed tasks -->
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3 flex items-center gap-2">
+                                    <i data-lucide="banknote" class="w-4 h-4"></i> Fully Settled Contributions
+                                </h4>
+                                <ul id="completed-fees-list" class="space-y-2 text-xs">
+                                    <!-- Dynamic completed fees -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. PROFILE / SETTINGS TAB -->
+                <section id="tab-settings" class="tab-content space-y-6 hidden">
+                    <div class="max-w-2xl mx-auto glass-panel p-6 md:p-8 rounded-2xl space-y-6">
+                        <div class="border-b border-white/5 pb-4">
+                            <h3 class="text-lg font-bold text-white">Student Information Editor</h3>
+                            <p class="text-xs text-slate-400">Update your academic credentials and capstone details</p>
+                        </div>
+
+                        <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Student Full Name</label>
+                                <input type="text" id="settings-name" required class="w-full px-4 py-2.5 rounded-xl bg-navy-900 border border-slate-700 text-white text-sm focus:border-cyan-accent focus:outline-none">
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Grade Level</label>
+                                    <select id="settings-grade" class="w-full px-4 py-2.5 rounded-xl bg-navy-900 border border-slate-700 text-white text-sm focus:border-cyan-accent focus:outline-none">
+                                        <option value="Grade 12">Grade 12</option>
+                                        <option value="Grade 11">Grade 11</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Strand / Track</label>
+                                    <select id="settings-strand" class="w-full px-4 py-2.5 rounded-xl bg-navy-900 border border-slate-700 text-white text-sm focus:border-cyan-accent focus:outline-none">
+                                        <option value="TVL - ICT">TVL - ICT</option>
+                                        <option value="STEM">STEM</option>
+                                        <option value="ABM">ABM</option>
+                                        <option value="HUMSS">HUMSS</option>
+                                        <option value="GAS">GAS</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">Student ID / LRN</label>
+                                    <input type="text" id="settings-studentid" required class="w-full px-4 py-2.5 rounded-xl bg-navy-900 border border-slate-700 text-white text-sm focus:border-cyan-accent focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-300 mb-1">School Name</label>
+                                    <input type="text" id="settings-school" required class="w-full px-4 py-2.5 rounded-xl bg-navy-900 border border-slate-700 text-white text-sm focus:border-cyan-accent focus:outline-none">
+                                </div>
+                            </div>
+
+                            <div class="pt-4 flex items-center justify-between border-t border-white/5">
+                                <button type="button" onclick="resetToDefaults()" class="px-4 py-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-semibold hover:bg-red-500/20">
+                                    Reset App Data
+                                </button>
+                                <button type="submit" class="px-6 py-2.5 rounded-xl gradient-bg text-navy-900 font-bold text-xs shadow-lg shadow-cyan-accent/20 hover:opacity-95">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD TASK -->
+    <div id="modal-add-task" class="fixed inset-0 bg-navy-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-md p-6 rounded-2xl space-y-4 border border-cyan-accent/20">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-white text-base">Add New Subject Task</h3>
+                <button onclick="closeModal('modal-add-task')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="handleAddTask(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Task Title</label>
+                    <input type="text" id="task-title-input" required placeholder="e.g. Capstone Chapter 3 Methodology Draft" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:border-cyan-accent focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Subject Category</label>
+                    <select id="task-subject-input" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:border-cyan-accent focus:outline-none">
+                        <option value="Practical Research">Practical Research</option>
+                        <option value="Empowering Technologies">Empowering Technologies</option>
+                        <option value="General Mathematics">General Mathematics</option>
+                        <option value="Oral Communication">Oral Communication</option>
+                        <option value="Physical Science">Physical Science</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Due Date</label>
+                    <input type="date" id="task-date-input" required class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:border-cyan-accent focus:outline-none">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-add-task')" class="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-white">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl gradient-bg text-navy-900 font-bold text-xs">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD FEE -->
+    <div id="modal-add-fee" class="fixed inset-0 bg-navy-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-md p-6 rounded-2xl space-y-4 border border-cyan-accent/20">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-white text-base">Add School Contribution / Fee</h3>
+                <button onclick="closeModal('modal-add-fee')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="handleAddFee(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Fee Description</label>
+                    <input type="text" id="fee-name-input" required placeholder="e.g. Capstone Hardbound Printing Share" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:border-cyan-accent focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Total Target (₱)</label>
+                        <input type="number" id="fee-total-input" min="0" step="10" required placeholder="250" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:border-cyan-accent focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-300 mb-1">Paid Amount (₱)</label>
+                        <input type="number" id="fee-paid-input" min="0" step="10" required placeholder="100" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:border-cyan-accent focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-add-fee')" class="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-white">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl gradient-bg text-navy-900 font-bold text-xs">Save Fee Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD GOAL / MILESTONE -->
+    <div id="modal-add-goal" class="fixed inset-0 bg-navy-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-md p-6 rounded-2xl space-y-4 border border-cyan-accent/20">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-white text-base">Add Activity Milestone</h3>
+                <button onclick="closeModal('modal-add-goal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="handleAddGoal(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Milestone Name</label>
+                    <input type="text" id="goal-title-input" required placeholder="e.g. Capstone Oral Defense Review" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:border-cyan-accent focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Category / Tag</label>
+                    <input type="text" id="goal-tag-input" required placeholder="e.g. Capstone Defense" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:border-cyan-accent focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1">Progress Percentage (%)</label>
+                    <input type="number" id="goal-progress-input" min="0" max="100" required placeholder="40" class="w-full px-3 py-2 rounded-xl bg-navy-900 border border-slate-700 text-xs text-white focus:border-cyan-accent focus:outline-none">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-add-goal')" class="px-3 py-2 rounded-xl text-xs text-slate-400 hover:text-white">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl gradient-bg text-navy-900 font-bold text-xs">Add Milestone</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        // INITIAL DATA SCHEMAS AND DEFAULT STATE
+        const DEFAULT_STUDENT = {
+            name: "Juan Dela Cruz",
+            grade: "Grade 12",
+            strand: "TVL - ICT",
+            studentId: "2026-10492-SJ",
+            school: "San Jose Senior High School"
+        };
+
+        const DEFAULT_TASKS = [
+            { id: 1, title: "Capstone Chapter 1-3 Final Draft Submission", subject: "Practical Research", dueDate: "2026-10-30", status: "In Progress" },
+            { id: 2, title: "Website Prototype Interface Design", subject: "Empowering Technologies", dueDate: "2026-11-02", status: "In Progress" },
+            { id: 3, title: "Statistics & Probability Data Analysis", subject: "General Mathematics", dueDate: "2026-10-28", status: "Pending" },
+            { id: 4, title: "Mock Panel Interview Recording", subject: "Oral Communication", dueDate: "2026-10-25", status: "Completed" },
+            { id: 5, title: "Lab Report on Physical Phenomena", subject: "Physical Science", dueDate: "2026-11-05", status: "Pending" }
+        ];
+
+        const DEFAULT_FEES = [
+            { id: 1, title: "Capstone Hardbound & Manual Printing", total: 400, paid: 250 },
+            { id: 2, title: "Class Batch Shirt Contribution", total: 350, paid: 350 },
+            { id: 3, title: "ICT Laboratory Dues & Maintenance", total: 200, paid: 100 },
+            { id: 4, title: "Graduation & Yearbook Initial Share", total: 500, paid: 150 }
+        ];
+
+        const DEFAULT_GOALS = [
+            { id: 1, title: "Capstone Final Defense Preparation", tag: "Academic Research", progress: 80 },
+            { id: 2, title: "NCII Computer Systems Servicing Prep", tag: "TVL Assessment", progress: 65 },
+            { id: 3, title: "College Entrance Exam (UPCAT/DOST) Review", tag: "Career Development", progress: 50 },
+            { id: 4, title: "Work Immersion Portfolio Compilation", tag: "Immersion Requirements", progress: 90 }
+        ];
+
+        // GLOBAL APP STATE VARIABLES
+        let studentProfile = JSON.parse(localStorage.getItem('shs_student')) || DEFAULT_STUDENT;
+        let tasks = JSON.parse(localStorage.getItem('shs_tasks')) || DEFAULT_TASKS;
+        let fees = JSON.parse(localStorage.getItem('shs_fees')) || DEFAULT_FEES;
+        let goals = JSON.parse(localStorage.getItem('shs_goals')) || DEFAULT_GOALS;
+
+        let selectedSubjectFilter = "All";
+        let currentCalDate = new Date(2026, 9, 1); // Oct 2026
+
+        // Chart instances
+        let statusChartInstance = null;
+        let subjectChartInstance = null;
+        let feeChartInstance = null;
+
+        // INITIALIZATION
+        window.onload = function() {
+            lucide.createIcons();
+            updateLiveTime();
+            setInterval(updateLiveTime, 1000);
+
+            // Sync user details to UI
+            syncStudentProfile();
+
+            // Render all dynamic tabs content
+            renderHomeSection();
+            renderDashboardSection();
+            renderCalendarSection();
+            renderActivitiesSection();
+            renderClassesSection();
+            renderTopaySection();
+            renderCompletedSection();
+            populateSettingsForm();
+
+            // Default tab: home
+            switchTab('home');
+        };
+
+        // LIVE CLOCK FUNCTION
+        function updateLiveTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            const timeEl = document.getElementById('live-time');
+            const dateEl = document.getElementById('live-date');
+            if (timeEl) timeEl.innerText = timeStr;
+            if (dateEl) dateEl.innerText = dateStr;
+        }
+
+        // PERSISTENCE SAVE HELPERS
+        function saveData() {
+            localStorage.setItem('shs_student', JSON.stringify(studentProfile));
+            localStorage.setItem('shs_tasks', JSON.stringify(tasks));
+            localStorage.setItem('shs_fees', JSON.stringify(fees));
+            localStorage.setItem('shs_goals', JSON.stringify(goals));
+
+            syncStudentProfile();
+            renderHomeSection();
+            renderDashboardSection();
+            renderCalendarSection();
+            renderActivitiesSection();
+            renderClassesSection();
+            renderTopaySection();
+            renderCompletedSection();
+        }
+
+        // PROFILE SYNC
+        function syncStudentProfile() {
+            document.getElementById('sidebar-user-name').innerText = studentProfile.name;
+            document.getElementById('sidebar-user-strand').innerText = `${studentProfile.grade} • ${studentProfile.strand}`;
+            document.getElementById('banner-user-name').innerText = studentProfile.name.split(' ')[0];
+
+            // Initials
+            const nameParts = studentProfile.name.split(' ');
+            const initials = nameParts.length > 1 ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]) : studentProfile.name.substring(0,2);
+            document.getElementById('user-avatar-initials').innerText = initials.toUpperCase();
+        }
+
+        // TAB SWITCHING
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`tab-${tabId}`);
+            if (target) target.classList.remove('hidden');
+
+            // Nav link active highlight
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-navy-700', 'text-cyan-accent');
+            });
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('bg-navy-700', 'text-cyan-accent');
+            }
+
+            // Update page title
+            const titleMap = {
+                'home': 'Home Banner & Quick Overview',
+                'dashboard': 'Task Analytics & Master Registry',
+                'calendars': 'Academic Calendar & Submissions',
+                'activities': 'Milestones & Activity Goal Tracker',
+                'classes': 'Subject Task Checklists',
+                'topay': 'Financial Tracker & School Fees',
+                'completed': 'Mga Natapos na Bayarin & Achievements',
+                'settings': 'Student Profile & System Settings'
+            };
+            document.getElementById('page-title').innerText = titleMap[tabId] || 'SHS Portal';
+
+            // Re-render charts if tab changes
+            if (tabId === 'dashboard') {
+                renderDashboardCharts();
+            } else if (tabId === 'topay') {
+                renderFeeChart();
+            }
+        }
+
+        function toggleMobileNav() {
+            const nav = document.getElementById('mobile-nav');
+            nav.classList.toggle('hidden');
+            nav.classList.toggle('flex');
+        }
+
+        // 1. HOME TAB RENDERING
+        function renderHomeSection() {
+            document.getElementById('summary-total-tasks').innerText = tasks.length;
+            
+            // Pending fees calculation
+            const pendingFeeSum = fees.reduce((acc, curr) => acc + (curr.total - curr.paid), 0);
+            document.getElementById('summary-pending-fees').innerText = `₱${pendingFeeSum.toFixed(2)}`;
+
+            // Active Goals
+            document.getElementById('summary-active-goals').innerText = goals.length;
+
+            // Completion Rate
+            const completedCount = tasks.filter(t => t.status === 'Completed').length;
+            const rate = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+            document.getElementById('summary-completion-rate').innerText = `${rate}%`;
+
+            // Upcoming list rendering
+            const upcomingList = document.getElementById('home-upcoming-list');
+            upcomingList.innerHTML = '';
+            
+            const upcomingTasks = tasks.filter(t => t.status !== 'Completed').slice(0, 3);
+            if (upcomingTasks.length === 0) {
+                upcomingList.innerHTML = `<p class="text-xs text-slate-400 italic">No upcoming pending deadlines!</p>`;
+                return;
+            }
+
+            upcomingTasks.forEach(t => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-3 rounded-xl bg-navy-900/60 border border-white/5";
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-2 h-2 rounded-full bg-cyan-accent"></div>
+                        <div>
+                            <p class="text-xs font-semibold text-white">${t.title}</p>
+                            <span class="text-[10px] text-slate-400">${t.subject} • Due: ${t.dueDate}</span>
+                        </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'In Progress' ? 'bg-cyan-accent/20 text-cyan-accent' : 'bg-amber-500/20 text-amber-400'}">${t.status}</span>
+                `;
+                upcomingList.appendChild(item);
+            });
+        }
+
+        // 2. DASHBOARD TAB RENDERING
+        function renderDashboardSection() {
+            const tbody = document.getElementById('master-task-tbody');
+            tbody.innerHTML = '';
+
+            tasks.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-navy-700/30 transition";
+                
+                let badgeClass = "bg-amber-500/20 text-amber-400";
+                if (t.status === "Completed") badgeClass = "bg-emerald-500/20 text-emerald-400";
+                if (t.status === "In Progress") badgeClass = "bg-cyan-accent/20 text-cyan-accent";
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-medium text-white">${t.title}</td>
+                    <td class="py-3 px-4 text-slate-300">${t.subject}</td>
+                    <td class="py-3 px-4 text-slate-400 font-mono">${t.dueDate}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 rounded-md text-[10px] font-bold ${badgeClass}">${t.status}</span>
+                    </td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <button onclick="toggleTaskStatus(${t.id})" title="Toggle Completion" class="text-cyan-accent hover:text-white">
+                            <i data-lucide="${t.status === 'Completed' ? 'rotate-ccw' : 'check-circle'}" class="w-4 h-4 inline"></i>
+                        </button>
+                        <button onclick="deleteTask(${t.id})" title="Delete Task" class="text-red-400 hover:text-red-300">
+                            <i data-lucide="trash-2" class="w-4 h-4 inline"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            lucide.createIcons();
+            renderDashboardCharts();
+        }
+
+        function filterMasterTable() {
+            const query = document.getElementById('task-search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('task-filter-status').value;
+            const rows = document.querySelectorAll('#master-task-tbody tr');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                const statusText = row.children[3].innerText.trim();
+
+                const matchesQuery = text.includes(query);
+                const matchesStatus = (statusFilter === "All") || (statusText === statusFilter);
+
+                if (matchesQuery && matchesStatus) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
+        function renderDashboardCharts() {
+            const completed = tasks.filter(t => t.status === 'Completed').length;
+            const inProgress = tasks.filter(t => t.status === 'In Progress').length;
+            const pending = tasks.filter(t => t.status === 'Pending').length;
+
+            // Status Doughnut Chart
+            const ctx1 = document.getElementById('statusChart');
+            if (ctx1) {
+                if (statusChartInstance) statusChartInstance.destroy();
+                statusChartInstance = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Completed', 'In Progress', 'Pending'],
+                        datasets: [{
+                            data: [completed, inProgress, pending],
+                            backgroundColor: ['#10B981', '#00F5D4', '#F59E0B'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#94A3B8', font: { size: 11 } } }
+                        }
+                    }
+                });
+            }
+
+            // Subject Bar Chart
+            const subjectCounts = {};
+            tasks.forEach(t => {
+                subjectCounts[t.subject] = (subjectCounts[t.subject] || 0) + 1;
+            });
+
+            const ctx2 = document.getElementById('subjectChart');
+            if (ctx2) {
+                if (subjectChartInstance) subjectChartInstance.destroy();
+                subjectChartInstance = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(subjectCounts),
+                        datasets: [{
+                            label: 'Tasks Count',
+                            data: Object.values(subjectCounts),
+                            backgroundColor: '#00BBF9',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { ticks: { color: '#94A3B8', font: { size: 10 } }, grid: { display: false } },
+                            y: { ticks: { color: '#94A3B8', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+        }
+
+        // 3. CALENDAR TAB RENDERING
+        function renderCalendarSection() {
+            const year = currentCalDate.getFullYear();
+            const month = currentCalDate.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            document.getElementById('calendar-month-year').innerText = `${monthNames[month]} ${year}`;
+
+            const grid = document.getElementById('calendar-days-grid');
+            grid.innerHTML = '';
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Blank filler cells for alignment
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = "h-20 bg-navy-900/30 rounded-xl border border-white/5 opacity-30";
+                grid.appendChild(emptyCell);
+            }
+
+            // Days cells
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayTasks = tasks.filter(t => t.dueDate === dateStr);
+
+                const cell = document.createElement('div');
+                cell.className = "h-20 bg-navy-900/80 rounded-xl p-1.5 border border-white/5 flex flex-col justify-between hover:border-cyan-accent/40 transition overflow-hidden";
+                
+                let taskBadges = '';
+                dayTasks.forEach(dt => {
+                    taskBadges += `<div class="text-[9px] bg-cyan-accent/20 text-cyan-accent px-1 py-0.5 rounded truncate mb-0.5" title="${dt.title}">${dt.title}</div>`;
+                });
+
+                cell.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-300">${day}</span>
+                        ${dayTasks.length > 0 ? `<span class="w-1.5 h-1.5 rounded-full bg-cyan-accent"></span>` : ''}
+                    </div>
+                    <div class="overflow-y-auto max-h-12 scrollbar-none">
+                        ${taskBadges}
+                    </div>
+                `;
+                grid.appendChild(cell);
+            }
+        }
+
+        function changeCalendarMonth(delta) {
+            currentCalDate.setMonth(currentCalDate.getMonth() + delta);
+            renderCalendarSection();
+        }
+
+        // 4. MY ACTIVITIES TAB RENDERING
+        function renderActivitiesSection() {
+            const container = document.getElementById('goals-container');
+            container.innerHTML = '';
+
+            goals.forEach(g => {
+                const card = document.createElement('div');
+                card.className = "glass-panel p-5 rounded-2xl space-y-3 relative overflow-hidden";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-accent/20 text-cyan-accent uppercase">${g.tag}</span>
+                            <h4 class="text-sm font-bold text-white mt-1">${g.title}</h4>
+                        </div>
+                        <button onclick="deleteGoal(${g.id})" class="text-slate-500 hover:text-red-400 text-xs">
+                            <i data-lucide="trash" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Milestone Progress:</span>
+                            <span class="font-bold text-cyan-accent">${g.progress}%</span>
+                        </div>
+                        <div class="w-full bg-navy-900 h-2.5 rounded-full overflow-hidden p-0.5 border border-white/5">
+                            <div class="gradient-bg h-full rounded-full transition-all duration-500" style="width: ${g.progress}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-2 border-t border-white/5">
+                        <button onclick="updateGoalProgress(${g.id}, -10)" class="px-2 py-1 bg-navy-900 rounded text-xs text-slate-300 hover:text-white">-10%</button>
+                        <button onclick="updateGoalProgress(${g.id}, 10)" class="px-2 py-1 bg-navy-900 rounded text-xs text-slate-300 hover:text-white">+10%</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function updateGoalProgress(id, delta) {
+            goals = goals.map(g => {
+                if (g.id === id) {
+                    let newProg = Math.max(0, Math.min(100, g.progress + delta));
+                    return { ...g, progress: newProg };
+                }
+                return g;
+            });
+            saveData();
+        }
+
+        function deleteGoal(id) {
+            goals = goals.filter(g => g.id !== id);
+            saveData();
+        }
+
+        // 5. CLASSES TAB RENDERING
+        function renderClassesSection() {
+            // Subject Filter Pills
+            const subjects = ["All", "Practical Research", "Empowering Technologies", "General Mathematics", "Oral Communication", "Physical Science"];
+            const pillsContainer = document.getElementById('subject-filter-pills');
+            pillsContainer.innerHTML = '';
+
+            subjects.forEach(sub => {
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition ${selectedSubjectFilter === sub ? 'gradient-bg text-navy-900' : 'bg-navy-900 text-slate-400 hover:text-white'}`;
+                btn.innerText = sub;
+                btn.onclick = () => {
+                    selectedSubjectFilter = sub;
+                    renderClassesSection();
+                };
+                pillsContainer.appendChild(btn);
+            });
+
+            // Cards filtering
+            const container = document.getElementById('subject-task-cards');
+            container.innerHTML = '';
+
+            const filtered = selectedSubjectFilter === "All" ? tasks : tasks.filter(t => t.subject === selectedSubjectFilter);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full p-8 text-center glass-panel rounded-2xl text-slate-400 text-xs">No tasks found for subject category "${selectedSubjectFilter}".</div>`;
+                return;
+            }
+
+            filtered.forEach(t => {
+                const card = document.createElement('div');
+                card.className = "glass-card p-4 rounded-2xl space-y-3 flex flex-col justify-between";
+                
+                let statusColor = "text-amber-400 bg-amber-500/10 border-amber-500/20";
+                if (t.status === "Completed") statusColor = "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+                if (t.status === "In Progress") statusColor = "text-cyan-accent bg-cyan-accent/10 border-cyan-accent/20";
+
+                card.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-start gap-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${t.subject}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${statusColor}">${t.status}</span>
+                        </div>
+                        <h4 class="text-xs font-bold text-white line-clamp-2">${t.title}</h4>
+                    </div>
+
+                    <div class="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
+                        <span class="text-slate-400 font-mono text-[10px]">Due: ${t.dueDate}</span>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="toggleTaskStatus(${t.id})" class="px-2 py-1 rounded bg-navy-900 text-cyan-accent hover:bg-navy-800 text-[10px] font-bold">
+                                ${t.status === 'Completed' ? 'Undo' : 'Mark Complete'}
+                            </button>
+                            <button onclick="deleteTask(${t.id})" class="text-slate-500 hover:text-red-400">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function toggleTaskStatus(id) {
+            tasks = tasks.map(t => {
+                if (t.id === id) {
+                    const nextStatus = t.status === 'Completed' ? 'In Progress' : 'Completed';
+                    return { ...t, status: nextStatus };
+                }
+                return t;
+            });
+            saveData();
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveData();
+        }
+
+        // 6. TO-PAY TAB RENDERING
+        function renderTopaySection() {
+            const container = document.getElementById('fee-items-container');
+            container.innerHTML = '';
+
+            let totalTarget = 0;
+            let totalPaid = 0;
+
+            fees.forEach(f => {
+                totalTarget += f.total;
+                totalPaid += f.paid;
+
+                const remaining = f.total - f.paid;
+                const percentage = Math.round((f.paid / f.total) * 100);
+
+                const card = document.createElement('div');
+                card.className = "glass-card p-4 rounded-xl space-y-3";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="text-xs font-bold text-white">${f.title}</h4>
+                            <p class="text-[10px] text-slate-400">Target Share: ₱${f.total.toFixed(2)} | Paid: ₱${f.paid.toFixed(2)}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold ${remaining === 0 ? 'text-emerald-400' : 'text-amber-400'}">
+                                ${remaining === 0 ? 'Fully Paid' : '₱' + remaining.toFixed(2) + ' Left'}
+                            </span>
+                            <button onclick="deleteFee(${f.id})" class="block text-[10px] text-slate-500 hover:text-red-400 ml-auto mt-1">Remove</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="w-full bg-navy-900 h-2 rounded-full overflow-hidden p-0.5">
+                            <div class="h-full rounded-full ${remaining === 0 ? 'bg-emerald-400' : 'gradient-bg'} transition-all duration-500" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-1">
+                        <button onclick="adjustFeePaid(${f.id}, 50)" class="px-2 py-0.5 rounded bg-navy-900 text-[10px] text-slate-300 hover:text-cyan-accent">+₱50 Pay</button>
+                        <button onclick="adjustFeePaid(${f.id}, 100)" class="px-2 py-0.5 rounded bg-navy-900 text-[10px] text-slate-300 hover:text-cyan-accent">+₱100 Pay</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            document.getElementById('fee-total-target').innerText = `₱${totalTarget.toFixed(2)}`;
+            document.getElementById('fee-total-settled').innerText = `₱${totalPaid.toFixed(2)}`;
+            document.getElementById('fee-total-remaining').innerText = `₱${(totalTarget - totalPaid).toFixed(2)}`;
+
+            renderFeeChart();
+        }
+
+        function adjustFeePaid(id, amount) {
+            fees = fees.map(f => {
+                if (f.id === id) {
+                    let newPaid = Math.min(f.total, f.paid + amount);
+                    return { ...f, paid: newPaid };
+                }
+                return f;
+            });
+            saveData();
+        }
+
+        function deleteFee(id) {
+            fees = fees.filter(f => f.id !== id);
+            saveData();
+        }
+
+        function renderFeeChart() {
+            const ctx = document.getElementById('feeChart');
+            if (!ctx) return;
+
+            const settled = fees.reduce((acc, curr) => acc + curr.paid, 0);
+            const remaining = fees.reduce((acc, curr) => acc + (curr.total - curr.paid), 0);
+
+            if (feeChartInstance) feeChartInstance.destroy();
+            feeChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Settled Paid', 'Remaining Dues'],
+                    datasets: [{
+                        data: [settled, remaining],
+                        backgroundColor: ['#10B981', '#F59E0B'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94A3B8', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // 7. MGA NATAPOS TAB RENDERING
+        function renderCompletedSection() {
+            const completedTasks = tasks.filter(t => t.status === 'Completed');
+            const completedTasksList = document.getElementById('completed-tasks-list');
+            completedTasksList.innerHTML = '';
+
+            if (completedTasks.length === 0) {
+                completedTasksList.innerHTML = `<li class="text-slate-500 italic">No completed tasks yet.</li>`;
+            } else {
+                completedTasks.forEach(t => {
+                    const li = document.createElement('li');
+                    li.className = "p-2.5 rounded-xl bg-navy-900/60 border border-emerald-500/20 flex justify-between items-center";
+                    li.innerHTML = `
+                        <div>
+                            <p class="font-semibold text-white">${t.title}</p>
+                            <span class="text-[10px] text-slate-400">${t.subject}</span>
+                        </div>
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                    `;
+                    completedTasksList.appendChild(li);
+                });
+            }
+
+            const completedFees = fees.filter(f => f.paid >= f.total);
+            const completedFeesList = document.getElementById('completed-fees-list');
+            completedFeesList.innerHTML = '';
+
+            if (completedFees.length === 0) {
+                completedFeesList.innerHTML = `<li class="text-slate-500 italic">No fully settled contributions yet.</li>`;
+            } else {
+                completedFees.forEach(f => {
+                    const li = document.createElement('li');
+                    li.className = "p-2.5 rounded-xl bg-navy-900/60 border border-emerald-500/20 flex justify-between items-center";
+                    li.innerHTML = `
+                        <div>
+                            <p class="font-semibold text-white">${f.title}</p>
+                            <span class="text-[10px] text-slate-400">Total Settled: ₱${f.total.toFixed(2)}</span>
+                        </div>
+                        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+                    `;
+                    completedFeesList.appendChild(li);
+                });
+            }
+
+            lucide.createIcons();
+        }
+
+        // 8. PROFILE / SETTINGS TAB RENDERING
+        function populateSettingsForm() {
+            document.getElementById('settings-name').value = studentProfile.name;
+            document.getElementById('settings-grade').value = studentProfile.grade;
+            document.getElementById('settings-strand').value = studentProfile.strand;
+            document.getElementById('settings-studentid').value = studentProfile.studentId;
+            document.getElementById('settings-school').value = studentProfile.school;
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            studentProfile = {
+                name: document.getElementById('settings-name').value,
+                grade: document.getElementById('settings-grade').value,
+                strand: document.getElementById('settings-strand').value,
+                studentId: document.getElementById('settings-studentid').value,
+                school: document.getElementById('settings-school').value
+            };
+            saveData();
+            alert("Student Profile Updated Successfully!");
+        }
+
+        function resetToDefaults() {
+            if (confirm("Reset all portal data back to default Capstone baseline?")) {
+                localStorage.clear();
+                studentProfile = DEFAULT_STUDENT;
+                tasks = DEFAULT_TASKS;
+                fees = DEFAULT_FEES;
+                goals = DEFAULT_GOALS;
+                saveData();
+                populateSettingsForm();
+            }
+        }
+
+        // AUTH MODAL HANDLERS
+        function openAuthModal() {
+            document.getElementById('auth-name').value = studentProfile.name;
+            document.getElementById('auth-grade').value = studentProfile.grade;
+            document.getElementById('auth-strand').value = studentProfile.strand;
+            document.getElementById('auth-studentid').value = studentProfile.studentId;
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            studentProfile.name = document.getElementById('auth-name').value;
+            studentProfile.grade = document.getElementById('auth-grade').value;
+            studentProfile.strand = document.getElementById('auth-strand').value;
+            studentProfile.studentId = document.getElementById('auth-studentid').value;
+
+            saveData();
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        // MODAL HELPERS
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function openAddTaskModal() {
+            document.getElementById('modal-add-task').classList.remove('hidden');
+        }
+
+        function handleAddTask(e) {
+            e.preventDefault();
+            const newTask = {
+                id: Date.now(),
+                title: document.getElementById('task-title-input').value,
+                subject: document.getElementById('task-subject-input').value,
+                dueDate: document.getElementById('task-date-input').value,
+                status: "Pending"
+            };
+            tasks.push(newTask);
+            saveData();
+            closeModal('modal-add-task');
+            e.target.reset();
+        }
+
+        function openFeeModal() {
+            document.getElementById('modal-add-fee').classList.remove('hidden');
+        }
+
+        function handleAddFee(e) {
+            e.preventDefault();
+            const newFee = {
+                id: Date.now(),
+                title: document.getElementById('fee-name-input').value,
+                total: parseFloat(document.getElementById('fee-total-input').value),
+                paid: parseFloat(document.getElementById('fee-paid-input').value)
+            };
+            fees.push(newFee);
+            saveData();
+            closeModal('modal-add-fee');
+            e.target.reset();
+        }
+
+        function openGoalModal() {
+            document.getElementById('modal-add-goal').classList.remove('hidden');
+        }
+
+        function handleAddGoal(e) {
+            e.preventDefault();
+            const newGoal = {
+                id: Date.now(),
+                title: document.getElementById('goal-title-input').value,
+                tag: document.getElementById('goal-tag-input').value,
+                progress: parseInt(document.getElementById('goal-progress-input').value)
+            };
+            goals.push(newGoal);
+            saveData();
+            closeModal('modal-add-goal');
+            e.target.reset();
+        }
+    </script>
+</body>
+</html>
